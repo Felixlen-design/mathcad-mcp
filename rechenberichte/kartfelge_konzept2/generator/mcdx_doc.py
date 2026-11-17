@@ -37,7 +37,7 @@ BOM = "﻿"
 
 SECTION_ATTRS = (
     'xml:space="preserve" TextAlignment="{align}" LineHeight="Auto" IsHyphenationEnabled="False" '
-    'xml:lang="de-de" FlowDirection="LeftToRight" NumberSubstitution.CultureSource="Text" '
+    'xml:lang="en-us" FlowDirection="LeftToRight" NumberSubstitution.CultureSource="Text" '
     'NumberSubstitution.Substitution="AsCulture" FontFamily="Tahoma" FontStyle="Normal" FontWeight="Normal" '
     'FontStretch="Normal" FontSize="{size}" Foreground="#FF000000" Typography.StandardLigatures="True" '
     'Typography.ContextualLigatures="True" Typography.DiscretionaryLigatures="False" '
@@ -105,10 +105,22 @@ class TextCell:
     def ascent(self):
         return max(r.size for r in self.paras[0]) * 0.98
 
+    def text_width(self):
+        """Generous width of the longest paragraph (so the narrowed region never wraps)."""
+        widths = [sum(len(r.text) * r.size * (0.62 if r.bold else 0.57) for r in p) for p in self.paras]
+        return max(widths) * 1.08 + 16
+
+    def box(self, left):
+        """(left, width) of the region; Prime only ever stores left-aligned text, so centring is done by position."""
+        if self.align == "Left":
+            return left, self.width
+        w = min(self.width, self.text_width())
+        return left + ((self.width - w) / 2 if self.align == "Center" else self.width - w), w
+
     def xaml(self) -> str:
-        out = [f'<Section xmlns="{WPF_NS}" ' + SECTION_ATTRS.format(align=self.align, size=self.size) + ">"]
+        out = [f'<Section xmlns="{WPF_NS}" ' + SECTION_ATTRS.format(align="Left", size=self.size) + ">"]
         for p in self.paras:
-            out.append(f'<Paragraph TextAlignment="{self.align}">')
+            out.append('<Paragraph NumberSubstitution.CultureSource="User">')
             for r in p:
                 attrs = ' style="Normal"'
                 if r.bold:
@@ -357,11 +369,12 @@ class Doc:
             parts[part] = xaml_package(cell.xaml())
             rels.append((rid, REL_FLOW, "/" + part))
             h = cell.height()
-            return (f'<region region-id="{next_region()}" width="{fmt(cell.width)}" actualWidth="{fmt(cell.width)}" '
+            left, width = cell.box(left)
+            return (f'<region region-id="{next_region()}" width="{fmt(width)}" actualWidth="{fmt(width)}" '
                     f'actualHeight="{fmt(h)}" top="{fmt(top)}" left="{fmt(left)}"><text item-idref="{rid}">'
                     f'<FlowDocument FontFamily="{TEXT_FONT}" FontStyle="Normal" FontWeight="Normal" '
                     f'FontSize="{cell.size}" Foreground="#FF000000" Background="#00FFFFFF" '
-                    f'TextAlignment="{cell.align}" xml:lang="de-de" Typography.Variants="Normal" '
+                    f'TextAlignment="Left" xml:lang="en-us" Typography.Variants="Normal" '
                     f'xmlns="{WPF_NS}" /></text></region>')
 
         regions = []
@@ -382,7 +395,7 @@ class Doc:
                     parts[name] = fh.read()
                 rid = rel_id()
                 rels_ws.append((rid, REL_IMAGE, "/" + name))
-                w, h = fmt(c.width), fmt(c.h)
+                w, h = str(round(c.width)), str(round(c.h))
                 regions.append(
                     f'<region region-id="{next_region()}" height="{h}" width="{w}" actualWidth="{w}" '
                     f'actualHeight="{h}" top="{fmt(it.top)}" left="{fmt(it.left)}"><picture>'
@@ -468,18 +481,27 @@ def xaml_package(document_xaml: str) -> bytes:
             '<Relationship Type="http://schemas.microsoft.com/wpf/2005/10/xaml/entry" Target="/Xaml/Document.xaml" '
             f'Id="{rel_id()}" /></Relationships>')
     return zip_parts({"Xaml/Document.xaml": document_xaml.encode(), "_rels/.rels": rels.encode(),
-                      "[Content_Types].xml": ct.encode()}, content_types_first=False)
+                      "[Content_Types].xml": ct.encode()}, content_types_first=False, stored=INNER_STORED)
 
 
-def zip_parts(parts: dict[str, bytes], content_types_first=True) -> bytes:
+STORED_SUFFIXES = (".XamlPackage",)          # outer package, as Prime writes it
+INNER_STORED = (".rels", "[Content_Types].xml")  # inside a XamlPackage, as WPF writes it
+
+
+def zip_parts(parts: dict[str, bytes], content_types_first=True, stored=STORED_SUFFIXES) -> bytes:
+    """Zip like Prime's own packages: MS-DOS host, already-compressed parts stored, XML deflated."""
     names = list(parts)
     if content_types_first and "[Content_Types].xml" in names:
         names.remove("[Content_Types].xml")
         names.insert(0, "[Content_Types].xml")
     buf = io.BytesIO()
-    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+    with zipfile.ZipFile(buf, "w") as z:
         for n in names:
-            z.writestr(n, parts[n])
+            info = zipfile.ZipInfo(n, date_time=(2026, 11, 17, 12, 0, 0))
+            info.create_system = 0
+            info.external_attr = 0
+            info.compress_type = zipfile.ZIP_STORED if n.endswith(stored) else zipfile.ZIP_DEFLATED
+            z.writestr(info, parts[n])
     return buf.getvalue()
 
 

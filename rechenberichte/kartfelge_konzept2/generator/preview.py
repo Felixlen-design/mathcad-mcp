@@ -65,14 +65,14 @@ for p in pages:
         y = it.top - p * PAGE_H
         c = it.cell
         if isinstance(c, TextCell):
-            ax.add_patch(Rectangle((it.left, y), c.width, c.height(), fill=False, ec="#e0e0ff", lw=0.4))
+            bl, bw = c.box(it.left)
+            ax.add_patch(Rectangle((bl, y), bw, c.height(), fill=False, ec="#9090ff", lw=0.4))
             txt = "\n".join("".join(r.text for r in para) for para in c.paras)
             import textwrap
-            per = max(10, int(c.width / (c.size * 0.53)))
+            per = max(10, int(bw / (c.size * 0.53)))
             wrapped = "\n".join(textwrap.fill(line, per) for line in txt.split("\n"))
             r0 = c.paras[0][0]
-            ha = {"Left": "left", "Center": "center", "Right": "right"}[c.align]
-            x = it.left + {"left": 0, "center": c.width / 2, "right": c.width}[ha]
+            ha, x = "left", bl
             ax.text(x, y, wrapped, va="top", ha=ha, fontsize=c.size * 0.68, family="DejaVu Sans",
                     fontweight="bold" if r0.bold else "normal", style="italic" if r0.italic else "normal",
                     linespacing=1.15)

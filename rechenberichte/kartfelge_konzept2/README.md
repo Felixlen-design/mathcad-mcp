@@ -1,12 +1,37 @@
-# Rechenbericht Kompakte Kartfelge, Konzept 2 (Mathcad Prime)
+# Rechenbericht Kompakte Kartfelge, Konzept 2 (Mathcad Prime 12)
 
 `Rechenbericht_Kartfelge_Konzept2_Lenhard.mcdx` ist der Rechenbericht „Kompakte Kartfelge, Konzept 2
 (neue Felge, Bestandsnabe)“ vom 11.11.2026 als rechnendes Mathcad-Prime-Arbeitsblatt. Aufbau wie im
 Rechenbericht Pneumatik-Spanner: Deckblatt, Inhaltsverzeichnis, je Abschnitt zentrierte Überschrift,
-nummerierte Teilschritte, `:=`-Definitionen mit Einheiten, Ergebnisse mit `=`, Nachweise als Vergleich.
-Kopfzeile „Lenhard“, Fußzeile mit Datum und „Seite x von y“, A4, 18 Seiten.
+nummerierte Teilschritte, `:=`-Definitionen mit Einheiten, Ergebnisse mit `=`, Nachweise mit Bewertung.
+Kopfzeile „Lenhard“, Fußzeile mit Datum und „Seite x von y“, A4, 19 Seiten.
 
-Mathcad rechnet beim Öffnen alles selbst nach. Die Datei enthält keine gespeicherten Ergebnisse.
+Die Datei ist für **Mathcad Prime 12** gestempelt (Versionsstempel und Einstellungen aus einem
+Prime-12.0.0.1-Arbeitsblatt). Ältere Prime-Versionen öffnen sie nicht. Mathcad rechnet beim Öffnen alles
+selbst nach; die Datei enthält keine gespeicherten Ergebnisse.
+
+## Stand 2: Anpassung für Prime 12
+
+Die erste Fassung ließ sich in Prime 11 und 12 nicht öffnen. Daraufhin wurde jedes Element, jedes Attribut,
+jeder Attributwert und jede Formelstruktur mit 89 von Prime 11/12 gespeicherten Arbeitsblättern abgeglichen
+(`generator/unseen*.py`). Alles, was Prime selbst nie so schreibt, ist ersetzt:
+
+- `TextAlignment` an Textabsätzen (in allen Textbereichen) und zentrierte/rechtsbündige Ausrichtung:
+  Text ist jetzt immer linksbündig wie bei Prime; Zentrieren erfolgt über die Position des Bereichs.
+- Sprachkennung der Textbereiche `de-de` → `en-us` (wie in allen Prime-Dateien).
+- Alleinstehende Vergleiche (z. B. `S_D ≥ 1,5`) → ausgewertete Bewertung `Nachweis(S_D, 1.5) = "erfüllt"`.
+- `(20 mm)³` → eigene Größe `d_20`; negatives Funktionsargument → eigene Größe `F_y3`.
+- Titel in den Dokumenteigenschaften entfernt; Bildgrößen ganzzahlig; ZIP wie von Prime gepackt.
+- Versionsstempel Prime 11.0.1 → Prime 12.0.0.1.
+
+Übrig sind nur der deutsche Seitenzahl-Text „Seite x von y“ (gleiche Vorlagensyntax wie Prime) und zwei
+Vergleichsoperatoren in `if`, die Prime an anderer Stelle selbst verwendet.
+
+### Falls die Datei trotzdem nicht öffnet
+
+Im Ordner `Diagnose/` liegen drei kleine Teildateien aus demselben Generator:
+`Test_A_nur_Formeln.mcdx`, `Test_B_nur_Text.mcdx` (mit Kopf-/Fußzeile) und `Test_C_nur_Bilder.mcdx`.
+Welche davon sich öffnen lässt, und die genaue Fehlermeldung von Prime, zeigen den verursachenden Teil.
 
 ## Prüfung
 
@@ -16,8 +41,9 @@ Mathcad rechnet beim Öffnen alles selbst nach. Die Datei enthält keine gespeic
 - Die Plattenbeiwerte der Radscheibe (β = 0,569 eingespannt, 0,855 gelenkig, Axiallast 0,226 / 0,437) und
   der Kippwinkel wurden unabhängig mit der Kirchhoff-Plattentheorie nachgerechnet (`generator/plate_check.py`).
 - `worksheet.xml`, Kopf- und Fußzeile, alle Formeln, `result.xml` und `presentation.xml` sind gegen die
-  XSD-Schemata worksheet50, math50, result10 und presentation10 gültig. Relationships und XAML-Pakete sind
-  konsistent (`generator/validate.py`).
+  XSD-Schemata worksheet50, math50, result10 und presentation10 gültig; Relationships und XAML-Pakete sind
+  konsistent (`generator/validate.py`). Die Schemata prüfen Bilder, Seitenumbrüche und Kopf-/Fußzeilen nur
+  locker; dafür gibt es den Abgleich mit echten Prime-Dateien.
 - Nicht geprüft: das Öffnen in Mathcad Prime selbst (hier kein Windows/Prime verfügbar).
 
 ## Abweichungen gegenüber dem PDF-Bericht
@@ -36,9 +62,10 @@ S_0B = 1,70, σ_b = 223 N/mm², S_D = 1,71, M_K = 173,5 N·m, σ_Scheibe = 12,4 
 
 ```
 python generator/figures.py generator/img
-python generator/build_kartfelge.py <ziel.mcdx> <beliebiges Prime-11-Arbeitsblatt.mcdx> generator/img
+python generator/build_kartfelge.py <ziel.mcdx> <beliebiges Prime-12-Arbeitsblatt.mcdx> generator/img
 python generator/validate.py <ziel.mcdx> <Ordner mit worksheet50.xsd usw.>
+python generator/unseen.py <ziel.mcdx> <Ordner mit Prime-Arbeitsblättern>
 ```
 
-Das Prime-11-Arbeitsblatt liefert nur Versionsstempel und Standard-Formelstile. Benötigt: Python 3.10+,
-matplotlib (Skizzen), sympy/numpy (nur `plate_check.py`), lxml (nur `validate.py`).
+Das Prime-12-Arbeitsblatt liefert nur Versionsstempel und Standard-Einstellungen. Benötigt: Python 3.10+,
+matplotlib (Skizzen), sympy/numpy (nur `plate_check.py`), lxml (Prüfskripte).

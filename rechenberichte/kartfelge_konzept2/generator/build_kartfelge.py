@@ -114,10 +114,11 @@ doc.row((0, T("Lenhard", CW, size=BASE_SIZE, align="Center")), gap=40)
 w_img = 560.0
 pw, ph = png_size(f"{IMGDIR}/schnitt.png")
 doc.row(((CW - w_img) / 2, IMG(f"{IMGDIR}/schnitt.png", w_img, w_img * ph / pw)), gap=6)
-doc.row((0, T("Prinzipskizze kurvenäußeres Vorderrad, Halbschnitt (Maße in mm, x ab Felgenaußenkante)",
+doc.row((0, T("Prinzipskizze, Halbschnitt (Maße in mm, x ab Felgenaußenkante)",
               CW, size=NOTE, align="Center", italic=True)), gap=40)
-doc.row((0, T([["Grundlage: Rechenbericht Kompakte Kartfelge, Konzept 2, vom 11.11.2026."],
-               ["Geschätzte Maße (aus Fotos) und Lastannahmen sind vor der Fertigung zu prüfen."]],
+doc.row((0, T("Grundlage: Rechenbericht Kompakte Kartfelge, Konzept 2, vom 11.11.2026.",
+              CW, size=NOTE, align="Center")), gap=2)
+doc.row((0, T("Geschätzte Maße und Lastannahmen vor der Fertigung prüfen.",
               CW, size=NOTE, align="Center")))
 
 # ------------------------------------------------------------------ page 2: table of contents (filled in later)
@@ -159,6 +160,9 @@ m(DE("l_L", V("x_B") - V("x_A"), "mm"), "Lagerabstand")
 note("Flansch-Ø73, Lochkreis Ø58 (3× M8), Zentrierung Ø40 und die Nabenlänge von 95 mm sind ebenfalls aus "
      "Fotos geschätzt. Alle geschätzten Werte müssen am Bauteil nachgemessen werden (Abschnitt 9).",
      x=XS, italic=True)
+sub("4) Bewertungsfunktion für die Nachweise")
+m(DF("Nachweis", ["S_x", "S_min"], If(Cmp(V("S_x"), ">=", V("S_min")), Str("erfüllt"), Str("nicht erfüllt"))),
+  "Sicherheit S_x gegen Mindestwert S_min")
 
 # ------------------------------------------------------------------ 2 Lastannahmen
 title("2  Lastannahmen", "s2")
@@ -211,7 +215,8 @@ pair(DE("F_A2", F("F_A", V("F_za"), V("F_ya")), "N", 1), DE("F_B2", F("F_B", V("
 pair(DE("F_axB", V("F_ya"), "N", 1), E(V("F_A2") + V("F_B2"), "N", 1))
 note("Axialkraft an Lager B; Kontrolle rechts: Summe = F_za.", x=XM + 20, italic=True)
 label("Lastfall 3: Kurve, inneres Rad")
-pair(DE("F_A3", F("F_A", V("F_zi"), -V("F_yi")), "N", 1), DE("F_B3", F("F_B", V("F_zi"), -V("F_yi")), "N", 1))
+m(DE("F_y3", -V("F_yi"), "N", 1), "Seitenkraft mit Vorzeichen (nach außen)")
+pair(DE("F_A3", F("F_A", V("F_zi"), V("F_y3")), "N", 1), DE("F_B3", F("F_B", V("F_zi"), V("F_y3")), "N", 1))
 m(DE("F_axA", V("F_yi"), "N", 1), "Axialkraft nach außen, Lager A")
 label("Lastfall 4: Stoß")
 pair(DE("F_A4", F("F_A", V("F_zSt"), Z0), "N", 1), DE("F_B4", F("F_B", V("F_zSt"), Z0), "N", 1))
@@ -238,7 +243,8 @@ doc.row((XM, D("f_a2", Num(5.17))), (XM + 150, D("e_2", Num(0.42))), (XM + 300, 
 lin = (V("f_a") - V("f_a1")) / (V("f_a2") - V("f_a1"))
 pair(DE("e_B", V("e_1") + (V("e_2") - V("e_1")) * lin, None, 3),
      DE("Y_B", V("Y_1") + (V("Y_2") - V("Y_1")) * lin, None, 3))
-pair(E(V("F_axB") / V("F_rB"), None, 3), X(Cmp(V("F_axB") / V("F_rB"), ">", V("e_B"))), x2=XM + 190)
+m(E(V("F_axB") / V("F_rB"), None, 3), "Fa / Fr")
+m(E(If(Cmp(V("F_axB") / V("F_rB"), ">", V("e_B")), Str("Axiallast ansetzen"), Str("nur Radiallast"))))
 note("Fa / Fr ist größer als e, die Axiallast wird mit Y_B angesetzt.", x=XM + 20, italic=True)
 m(DE("P_B", 0.56 * V("F_rB") + V("Y_B") * V("F_axB"), "N", 0))
 sub("2) Nominelle Lebensdauer L10 in Mio. Umdrehungen")
@@ -263,11 +269,12 @@ m(E(0.6 * V("F_rB") + 0.5 * V("F_axB"), "N", 0), "kleiner als F_rB, daher ist P0
 m(DE("S_0B", V("C_0r") / V("F_rB"), None, 2), "Lager B")
 inp((D("f_RS", Num(1.3)), "Randsteinschlag in der Kurve"),)
 m(DE("S_0BR", V("S_0B") / V("f_RS"), None, 2), "Lager B mit Randsteinschlag")
-m(X(Cmp(V("S_0BR"), ">=", 1)), "gefordert S0 ≥ 1, bei Stößen üblicherweise ≥ 1,5")
+m(E(F("Nachweis", V("S_0BR"), 1)), "gefordert S0 ≥ 1, bei Stößen üblicherweise ≥ 1,5")
 sub("4) Drehzahl und Passungen")
 inp((D("v_max", q(80, "km/hr")), "Höchstgeschwindigkeit"),
     (D("n_G", q(24000, "1/min")), "Grenzdrehzahl 6003 (SKF)"))
-pair(DE("n_max", V("v_max") / (2 * PI * V("r_R")), "1/min", 0), X(Cmp(V("n_max"), "<", V("n_G"))))
+m(DE("n_max", V("v_max") / (2 * PI * V("r_R")), "1/min", 0), "Raddrehzahl bei 80 km/h")
+m(E(F("Nachweis", V("n_G") / V("n_max"), 1)), "Grenzdrehzahl / Raddrehzahl ≥ 1")
 note("Der Außenring läuft mit der Nabe um und sitzt fest; der Innenring steht auf dem Achsschenkel (Ø17 g6) "
      "und wird über die Distanzhülse axial geklemmt.")
 
@@ -308,7 +315,8 @@ inp((D("K_1", Num(0.95)), "Größeneinfluss"), (D("K_2", Num(0.9)), "Oberfläche
     (D("β_k", Num(1.8)), "Kerbwirkungszahl Wellenabsatz"))
 m(DE("σ_GW", V("σ_bW") * V("K_1") * V("K_2") / V("β_k"), "N/mm^2", 1), "Gestaltfestigkeit")
 m(DE("σ_GA", V("σ_GW") * (1 - V("σ_m") / V("R_m")), "N/mm^2", 1), "Mittelspannungskorrektur (Goodman)")
-pair(DE("S_D", V("σ_GA") / V("σ_a"), None, 2), X(Cmp(V("S_D"), ">=", 1.5)), x2=XM + 190)
+m(DE("S_D", V("σ_GA") / V("σ_a"), None, 2), "Dauersicherheit")
+m(E(F("Nachweis", V("S_D"), 1.5)))
 note("Überschlägiger Nachweis mit Mittelspannungskorrektur nach Goodman, kein vollständiger Nachweis nach "
      "DIN 743. Er ist konservativ, weil die volle Kurvenlast als Dauerlast angesetzt ist.", italic=True)
 sub("5) Erforderlicher Durchmesser bei Sicherheit 1,5")
@@ -322,7 +330,8 @@ label("Variante: Stahl mit nur Rm ≈ 700 N/mm²")
 inp((D("R_m7", q(700, "N/mm^2")), "Zugfestigkeit Variante"),)
 m(DE("σ_GW7", 0.5 * V("R_m7") * V("K_1") * V("K_2") / V("β_k"), "N/mm^2", 1))
 m(DE("S_D7", V("σ_GW7") * (1 - V("σ_m") / V("R_m7")) / V("σ_a"), None, 2), "Ø17 reicht dann nicht")
-m(DE("W_20", PI * q(20, "mm") ** 3 / 32, "mm^3", 1), "Ø20")
+m(D("d_20", q(20, "mm")), "Variante Ø20")
+m(DE("W_20", PI * V("d_20") ** 3 / 32, "mm^3", 1))
 m(DE("S_D20", V("σ_GW7") * (1 - V("M_m") / (V("W_20") * V("R_m7"))) / (V("M_a") / V("W_20")), None, 2),
   "mit Ø20 wieder ausreichend")
 sub("6) Bearbeitung")
@@ -426,7 +435,7 @@ m(DE("F_KR", V("F_V") - (1 - V("Φ_K")) * V("F_Bmax"), "N", 0), "Restklemmkraft,
 m(DE("S_K", V("F_V") / ((1 - V("Φ_K")) * V("F_Bmax")), None, 2), "Sicherheit gegen Klaffen")
 inp((D("α_A", Num(1.6)), "Anziehfaktor (Drehmomentschlüssel)"),)
 pair(DE("F_KRmin", V("F_V") / V("α_A") - (1 - V("Φ_K")) * V("F_Bmax"), "N", 0),
-     X(Cmp(V("F_KRmin"), ">", q(0, "N"))), x2=XM + 340)
+     E(If(Cmp(V("F_KRmin"), ">", q(0, "N")), Str("Fuge geschlossen"), Str("Fuge klafft"))), x2=XM + 300)
 note("Auch bei der kleinsten Vorspannung aus der Anziehstreuung bleibt die Fuge geschlossen.", x=XM + 20,
      italic=True)
 sub("4) Dauerhaltbarkeit")
@@ -451,7 +460,8 @@ pair(DE("S_pF", V("p_G") / V("p_F"), None, 2), DE("S_pS", V("p_G") / V("p_S"), N
 note("Mit Sechskantmutter ohne Scheibe liegt die Pressung zu nah an der Grenze. Auf der Aluminiumscheibe sind "
      "deshalb Flanschmuttern oder Scheiben nötig.")
 sub("7) Länge der Stehbolzen")
-pair(DE("l_St", V("t_S") + q(8, "mm") + q(3, "mm"), "mm"), X(Cmp(V("l_St"), "<=", V("x_S"))), x2=XM + 250)
+pair(DE("l_St", V("t_S") + q(8, "mm") + q(3, "mm"), "mm"),
+     E(If(Cmp(V("l_St"), "<=", V("x_S")), Str("passt"), Str("zu lang"))), x2=XM + 250)
 note("Scheibe 12 mm + Mutter 8 mm + 3 mm Überstand. Bis 25 mm bleiben die Bolzen hinter der "
      "Felgenaußenkante. Die vorhandene Länge ist aus den Fotos auf etwa 22 mm geschätzt und muss gemessen "
      "werden.", x=XM + 20, italic=True)
@@ -505,8 +515,6 @@ note("Im Ist-Zustand liegt die Radmitte außerhalb beider Lager. Die Radlast erz
 # ------------------------------------------------------------------ 9 Ergebnis
 title("9  Ergebnisübersicht", "s9", force=True)
 note("Alle Werte werden von Mathcad aus den vorangehenden Abschnitten übernommen.", x=XS, italic=True)
-m(DF("Nachweis", ["S_x", "S_min"], If(Cmp(V("S_x"), ">=", V("S_min")), Str("erfüllt"), Str("nicht erfüllt"))),
-  "Bewertung: Sicherheit S_x gegen Mindestwert S_min")
 c1, c2, c3 = XS, 234.0, 368.0
 doc.row((c1, T("Nachweis", 210, size=NOTE, bold=True)), (c2, T("Sicherheit", 130, size=NOTE, bold=True)),
         (c3, T("Bewertung (Mindestwert)", 250, size=NOTE, bold=True)), gap=3)
@@ -615,13 +623,14 @@ print("Doppelt definiert:", dups or "keine")
 if errors or dups:
     sys.exit(1)
 
-# ------------------------------------------------------------------ base parts from a Prime 11 worksheet
+# ------------------------------------------------------------------ base parts from a Prime 12 worksheet
 ref = zipfile.ZipFile(REF)
 presentation = ref.read("mathcad/settings/presentation.xml").decode("utf-8-sig")
 margin = f"{MARGIN_L:.10g},{MARGIN_T:.10g},{MARGIN_R:.10g},{MARGIN_B:.10g}"
 presentation = re.sub(r"<pageModel [^>]*/>",
                       f'<pageModel paper-code="A4" grid-size="Fine" orientation="Portrait" margin-type="Custom" '
-                      f'page-margin="{margin}" spell-check-enabled="false" />', presentation)
+                      f'page-margin="{margin}" spell-check-enabled="false" starting-page-number="1" total-pages-offset="0" '
+                      f'page-background-color="#FFF6FAF6" />', presentation)
 content_types = (
     f'{BOM}{XML_DECL}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
     '<Default Extension="xml" ContentType="application/vnd.openxmlformats-officedocument.mathprocessingml.mathcad.main+xml" />'
@@ -643,8 +652,7 @@ root_rels = (
     f'<Relationship Type="{od}" Target="/mathcad/footer.xml" Id="{rel_id()}" />'
     '<Relationship Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" '
     f'Target="/docProps/core.xml" Id="{rel_id()}" /></Relationships>')
-core = (f'{XML_DECL}<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties">'
-        '<dc:title xmlns:dc="http://purl.org/dc/elements/1.1/">Rechenbericht Kompakte Kartfelge, Konzept 2</dc:title>'
+core = (f'{XML_DECL}\n<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties">'
         '<dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Lenhard</dc:creator>'
         '<cp:lastModifiedBy>Lenhard</cp:lastModifiedBy><cp:revision>1</cp:revision></cp:coreProperties>')
 base = {
@@ -657,6 +665,19 @@ base = {
 }
 with open(OUT, "wb") as fh:
     fh.write(doc.package(base))
+
+# small diagnostic worksheets: if the full one does not open, these show which kind of region is the cause
+import copy  # noqa: E402
+from mcdx_doc import ImageCell, MathCell, TextCell  # noqa: E402
+for suffix, kinds, furniture in (("Test_A_nur_Formeln", (MathCell,), False),
+                                 ("Test_B_nur_Text", (TextCell,), True),
+                                 ("Test_C_nur_Bilder", (ImageCell,), False)):
+    part = copy.copy(doc)
+    part.items = [it for it in doc.items if isinstance(it.cell, kinds)]
+    if not furniture:
+        part.header, part.footer, part.footer_page_field = [], [], None
+    with open(OUT.replace(".mcdx", f"_{suffix}.mcdx"), "wb") as fh:
+        fh.write(part.package(base))
 print("geschrieben:", OUT, f"(Seitenhöhe {PAGE_H:.2f} px, Inhaltsbreite {CW:.1f} px)")
 
 import pickle  # noqa: E402  (layout snapshot for the preview renderer)
