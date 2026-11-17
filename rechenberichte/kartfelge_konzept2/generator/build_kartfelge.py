@@ -215,7 +215,8 @@ pair(DE("F_A2", F("F_A", V("F_za"), V("F_ya")), "N", 1), DE("F_B2", F("F_B", V("
 pair(DE("F_axB", V("F_ya"), "N", 1), E(V("F_A2") + V("F_B2"), "N", 1))
 note("Axialkraft an Lager B; Kontrolle rechts: Summe = F_za.", x=XM + 20, italic=True)
 label("Lastfall 3: Kurve, inneres Rad")
-m(DE("F_y3", -V("F_yi"), "N", 1), "Seitenkraft mit Vorzeichen (nach außen)")
+pair(D("F_y3", -V("F_yi")), E("F_y3", "N", 1), x2=XM + 150)
+note("Seitenkraft mit Vorzeichen (nach außen)", x=XM + 20, italic=True)
 pair(DE("F_A3", F("F_A", V("F_zi"), V("F_y3")), "N", 1), DE("F_B3", F("F_B", V("F_zi"), V("F_y3")), "N", 1))
 m(DE("F_axA", V("F_yi"), "N", 1), "Axialkraft nach außen, Lager A")
 label("Lastfall 4: Stoß")
@@ -244,7 +245,7 @@ lin = (V("f_a") - V("f_a1")) / (V("f_a2") - V("f_a1"))
 pair(DE("e_B", V("e_1") + (V("e_2") - V("e_1")) * lin, None, 3),
      DE("Y_B", V("Y_1") + (V("Y_2") - V("Y_1")) * lin, None, 3))
 m(E(V("F_axB") / V("F_rB"), None, 3), "Fa / Fr")
-m(E(If(Cmp(V("F_axB") / V("F_rB"), ">", V("e_B")), Str("Axiallast ansetzen"), Str("nur Radiallast"))))
+m(E(If(Cmp(V("e_B"), "<", V("F_axB") / V("F_rB")), Str("Axiallast ansetzen"), Str("nur Radiallast"))))
 note("Fa / Fr ist größer als e, die Axiallast wird mit Y_B angesetzt.", x=XM + 20, italic=True)
 m(DE("P_B", 0.56 * V("F_rB") + V("Y_B") * V("F_axB"), "N", 0))
 sub("2) Nominelle Lebensdauer L10 in Mio. Umdrehungen")
@@ -435,7 +436,7 @@ m(DE("F_KR", V("F_V") - (1 - V("Φ_K")) * V("F_Bmax"), "N", 0), "Restklemmkraft,
 m(DE("S_K", V("F_V") / ((1 - V("Φ_K")) * V("F_Bmax")), None, 2), "Sicherheit gegen Klaffen")
 inp((D("α_A", Num(1.6)), "Anziehfaktor (Drehmomentschlüssel)"),)
 pair(DE("F_KRmin", V("F_V") / V("α_A") - (1 - V("Φ_K")) * V("F_Bmax"), "N", 0),
-     E(If(Cmp(V("F_KRmin"), ">", q(0, "N")), Str("Fuge geschlossen"), Str("Fuge klafft"))), x2=XM + 300)
+     E(If(Cmp(q(0, "N"), "<", V("F_KRmin")), Str("Fuge geschlossen"), Str("Fuge klafft"))), x2=XM + 300)
 note("Auch bei der kleinsten Vorspannung aus der Anziehstreuung bleibt die Fuge geschlossen.", x=XM + 20,
      italic=True)
 sub("4) Dauerhaltbarkeit")
@@ -461,7 +462,7 @@ note("Mit Sechskantmutter ohne Scheibe liegt die Pressung zu nah an der Grenze. 
      "deshalb Flanschmuttern oder Scheiben nötig.")
 sub("7) Länge der Stehbolzen")
 pair(DE("l_St", V("t_S") + q(8, "mm") + q(3, "mm"), "mm"),
-     E(If(Cmp(V("l_St"), "<=", V("x_S")), Str("passt"), Str("zu lang"))), x2=XM + 250)
+     E(If(Cmp(V("x_S"), ">=", V("l_St")), Str("passt"), Str("zu lang"))), x2=XM + 250)
 note("Scheibe 12 mm + Mutter 8 mm + 3 mm Überstand. Bis 25 mm bleiben die Bolzen hinter der "
      "Felgenaußenkante. Die vorhandene Länge ist aus den Fotos auf etwa 22 mm geschätzt und muss gemessen "
      "werden.", x=XM + 20, italic=True)
@@ -595,7 +596,8 @@ hdr_w = 150.0
 hdr_left = PAGE_W - MARGIN_R - hdr_w
 doc.header.append((T("Lenhard", hdr_w, align="Right"), 26.0, hdr_left))
 doc.footer.append((T("Dienstag, 17. November 2026", 260), 26.0, MARGIN_L))
-doc.footer_page_field = ("Seite_@PageNo_von_@PagesTotal", PAGE_W - MARGIN_R - 105, 26.0, 105.0)
+# Prime accepts only its 8 fixed page-number templates (schema enumeration); the German UI shows "Seite x von y"
+doc.footer_page_field = ("Page_@PageNo_of_@PagesTotal", PAGE_W - MARGIN_R - 105, 26.0, 105.0)
 
 # ------------------------------------------------------------------ check, then write
 env, results, errors = doc.evaluate()

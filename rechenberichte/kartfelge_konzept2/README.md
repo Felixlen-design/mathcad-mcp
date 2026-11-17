@@ -24,8 +24,19 @@ jeder Attributwert und jede Formelstruktur mit 89 von Prime 11/12 gespeicherten 
 - Titel in den Dokumenteigenschaften entfernt; Bildgrößen ganzzahlig; ZIP wie von Prime gepackt.
 - Versionsstempel Prime 11.0.1 → Prime 12.0.0.1.
 
-Übrig sind nur der deutsche Seitenzahl-Text „Seite x von y“ (gleiche Vorlagensyntax wie Prime) und zwei
-Vergleichsoperatoren in `if`, die Prime an anderer Stelle selbst verwendet.
+## Stand 3: Seitenzahl-Vorlage
+
+Prime 12 meldete beim Öffnen „Der Dateityp wird nicht unterstützt“ mit der Schemameldung
+`The Template attribute is invalid - The value 'Seite_@PageNo_von_@PagesTotal' is invalid according to its
+datatype`. Prime prüft die Datei beim Laden gegen sein Schema; die Seitenzahl darf nur eine von acht festen
+Vorlagen sein (Aufzählung `pageNumberTemplate` in Prime 12.0.1.0, z. B. `@PageNo`, `Page_@PageNo`,
+`@PageNo_of_@PagesTotal`, `Page_@PageNo_of_@PagesTotal`). Verwendet wird jetzt
+`Page_@PageNo_of_@PagesTotal`; die deutsche Oberfläche zeigt das als „Seite x von y“ an.
+
+Außerdem sind die letzten drei ungewohnten Formel-Kombinationen ersetzt (Vergleiche in `if` nur noch mit
+`<` und `≥`, negative Größe `F_y3` als reine Definition). Der Abgleich mit den echten Prime-Dateien findet
+jetzt keine einzige Abweichung mehr: kein Element, kein Attribut, kein Attributwert und keine
+Formelstruktur, die Prime nicht selbst schreibt.
 
 ### Falls die Datei trotzdem nicht öffnet
 

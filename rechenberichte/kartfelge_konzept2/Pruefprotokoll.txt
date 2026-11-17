@@ -1,4 +1,4 @@
-Seiten: 19, Regionen: 577, Ergebnisse: 191
+Seiten: 19, Regionen: 578, Ergebnisse: 191
   S. 3  x_R        = 74 mm
   S. 3  a_A        = 50 mm
   S. 3  b_B        = 41 mm
@@ -22,7 +22,7 @@ Seiten: 19, Regionen: 577, Ergebnisse: 191
   S. 5  F_B2       = 1914.56 N
   S. 5  F_axB      = 1100.37 N
   S. 5  (Ausdruck) = 733.578 N
-  S. 5  F_y3       = -101.849 N
+  S. 5  (Ausdruck) = -101.849 N
   S. 5  F_A3       = 170.494 N
   S. 5  F_B3       = -102.595 N
   S. 5  F_axA      = 101.849 N
