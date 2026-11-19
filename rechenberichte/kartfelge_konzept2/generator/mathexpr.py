@@ -220,7 +220,7 @@ class Paren(Node):
 def _needs_paren(child: Node, parent_kind: str, side: str) -> bool:
     if isinstance(child, Scale):
         return parent_kind == "pow" and side == "left"
-    if isinstance(child, (Paren, Num, Var, Unit, Const, Call, Abs, Root, Str)):
+    if type(child).__name__ in ("VecT", "BCall") or isinstance(child, (Paren, Num, Var, Unit, Const, Call, Abs, Root, Str)):
         return isinstance(child, Num) and child.v < 0 and parent_kind in ("mult", "pow", "minus", "plus") and side != "left"
     if isinstance(child, Neg):
         return parent_kind in ("mult", "pow") or (parent_kind in ("plus", "minus") and side == "right")
@@ -376,3 +376,46 @@ class Call(Node):
 
 def V(name): return Var(name)
 def F(name, *args): return Call(name, *args)
+
+
+class VecT(Node):
+    """Column vector written as a transposed row, (a b c)^T - the way Prime stores it."""
+    def __init__(self, values): self.values = list(values)
+    def xml(self):
+        inner = "".join(Num(v).xml() for v in self.values)
+        return (f'<ml:apply><ml:transpose /><ml:matrix rows="1" cols="{len(self.values)}">{inner}'
+                f'</ml:matrix></ml:apply>')
+    def ev(self, env): return Qty([float(v) for v in self.values])
+    def size(self):
+        w = sum(7.6 * len(fmt_real(v)) + 11 for v in self.values) + 26
+        return (w, LINE_ASC + 8, LINE_DESC + 3)
+
+
+class BCall(Node):
+    """Built-in Mathcad function (linterp, max)."""
+    def __init__(self, fname, *args): self.fname, self.args = fname, [wrap(a) for a in args]
+    def xml(self):
+        head = f'<ml:id labels="FUNCTION" label-is-contextual="true" xml:space="preserve">{self.fname}</ml:id>'
+        if len(self.args) == 1:
+            return f"<ml:apply>{head}{self.args[0].xml()}</ml:apply>"
+        return f"<ml:apply>{head}<ml:sequence>{''.join(a.xml() for a in self.args)}</ml:sequence></ml:apply>"
+    def ev(self, env):
+        vals = [a.ev(env) for a in self.args]
+        if self.fname == "max":
+            for v in vals[1:]:
+                _same(vals[0], v, "max")
+            return Qty(max(v.v for v in vals), vals[0].d)
+        if self.fname == "linterp":
+            vx, vy, x = vals
+            _same(Qty(0.0, vx.d), x, "linterp")
+            xs, ys, xv = vx.v, vy.v, x.v
+            if any(b <= a for a, b in zip(xs, xs[1:])):
+                raise ValueError("linterp: x-Werte nicht aufsteigend")
+            i = 0 if xv <= xs[0] else (len(xs) - 2 if xv >= xs[-1] else max(k for k in range(len(xs) - 1) if xs[k] <= xv))
+            t = (xv - xs[i]) / (xs[i + 1] - xs[i])          # Mathcad extrapolates with the end segments
+            return Qty(ys[i] + t * (ys[i + 1] - ys[i]), vy.d)
+        raise ValueError(self.fname)
+    def size(self):
+        parts = [a.size() for a in self.args]
+        w = 8.6 * len(self.fname) + 14 + sum(p[0] for p in parts) + 9 * (len(parts) - 1)
+        return (w, max(p[1] for p in parts), max(p[2] for p in parts))

@@ -3,9 +3,9 @@ import re
 import sys
 import zipfile
 
-from mathexpr import (PI, Abs, Call, Cmp, Neg, Num, Op, Paren, Root, Scale, Var, V, q)
+from mathexpr import (PI, Abs, BCall, Call, Cmp, If, Neg, Num, Op, Paren, Root, Scale, Str, Var, VecT, V, F, q)
 from mcdx_doc import (BASE_SIZE, BOM, CONTENT_W, MARGIN_L, MARGIN_R, MARGIN_T, MARGIN_B, PAGE_H, PAGE_TOP,
-                      PAGE_W, XML_DECL, D, Doc, E, IMG, MathCell, T, X, png_size, rel_id)
+                      PAGE_W, XML_DECL, D, DF, Doc, E, IMG, MathCell, T, X, png_size, rel_id)
 
 OUT, REF, IMGDIR = sys.argv[1], sys.argv[2], sys.argv[3]
 CW = CONTENT_W
@@ -81,6 +81,7 @@ def rimg(path, width):
 
 def sub(text):
     doc.skip(4)
+    doc.ensure(110)                     # keep a heading together with its first formulas
     lrow((XH, T(text, 380, bold=True)), gap=4)
 
 
@@ -100,6 +101,11 @@ def ev(expr, unit=None, check=None):
     if check is not None:
         cells.append((XC, X(check)))
     lrow(*cells, gap=GAP + 3)
+
+
+def nw(ist, zul):
+    """Live check shown in Mathcad: Nachweis(ist, zul) = "erfüllt" / "nicht erfüllt"."""
+    lrow((XL, E(F("Nachweis", ist, zul))), gap=GAP + 4)
 
 
 def txt(text):
@@ -172,6 +178,9 @@ de("F_B4", V("F_zSt") + V("F_A4"), "N")
 
 # ------------------------------------------------------------------ Wellenberechnung
 page("Wellenberechnung", "Achsschenkel Ø17", "welle")
+lrow((XL, DF("Nachweis", ["x_ist", "x_zul"],
+             If(Cmp(V("x_zul"), ">=", V("x_ist")), Str("erfüllt"), Str("nicht erfüllt")))), gap=GAP + 6)
+YR["y"] = doc.y
 for c in (D("R_m", q(1000, "N/mm^2")), D("R_e", q(750, "N/mm^2")), D("d_A", q(17, "mm")), D("x_Bu", q(120, "mm")),
           D("f_S", Num(1.5)), D("S_erf", Num(1.5)), D("K_1", Num(0.95)), D("K_2", Num(0.9)), D("β_k", Num(1.8))):
     rin(c)
@@ -182,14 +191,17 @@ de("M_Bu1", V("F_B1") * (V("x_Bu") - V("x_B")) - V("F_A1") * (V("x_Bu") - V("x_A
 de("M_Bu2", V("F_B2") * (V("x_Bu") - V("x_B")) - V("F_A2") * (V("x_Bu") - V("x_A")), "N*m")
 sub("2) Vordimensionierung")
 lrow((XL, D("d_erf", Root(32 * V("f_S") * V("M_bB") / (PI * V("σ_bzul")), 3))), gap=3)
-lrow((XL, E("d_erf", "mm")), (XC - 60, T("Ø vorhanden: 17 mm", 160)), gap=GAP + 3)
+lrow((XL, E("d_erf", "mm")), gap=GAP + 2)
+nw(V("d_erf"), V("d_A"))
 sub("3) Biegespannung")
 de("W_b", PI * V("d_A") ** 3 / 32, "mm^3")
-de("σ_b", V("f_S") * V("M_bB") / V("W_b"), "N/mm^2", check=Cmp(V("σ_b"), "<", V("σ_bzul")))
+de("σ_b", V("f_S") * V("M_bB") / V("W_b"), "N/mm^2")
+nw(V("σ_b"), V("σ_bzul"))
 sub("4) Schubspannung")
 de("A_A", PI * V("d_A") ** 2 / 4, "mm^2")
 de("τ_max", Op("div", 4, 3) * (V("F_A2") / V("A_A")), "N/mm^2")
-de("τ_zul", 0.5 * V("σ_bzul"), "N/mm^2", check=Cmp(V("τ_max"), "<", V("τ_zul")))
+de("τ_zul", 0.5 * V("σ_bzul"), "N/mm^2")
+nw(V("τ_max"), V("τ_zul"))
 sub("5) Dauerfestigkeit am Bund")
 de("M_m", Abs(V("M_Bu1") + V("M_Bu2")) / 2, "N*m")
 de("M_a", Abs(V("M_Bu1") - V("M_Bu2")) / 2, "N*m")
@@ -198,52 +210,56 @@ de("σ_a", V("M_a") / V("W_b"), "N/mm^2")
 de("σ_bW", 0.5 * V("R_m"), "N/mm^2")
 de("σ_GW", V("σ_bW") * V("K_1") * V("K_2") / V("β_k"), "N/mm^2")
 de("σ_GA", V("σ_GW") * (1 - V("σ_m") / V("R_m")), "N/mm^2")
-de("S_D", V("σ_GA") / V("σ_a"), None, check=Cmp(V("S_D"), ">", V("S_erf")))
+de("S_D", V("σ_GA") / V("σ_a"))
+nw(V("S_erf"), V("S_D"))
 sub("6) Erforderlicher Durchmesser dauerfest")
 de("W_erf", (V("S_erf") * V("M_a") + V("σ_GW") * V("M_m") / V("R_m")) / V("σ_GW"), "mm^3")
 lrow((XL, D("d_erfD", Root(32 * V("W_erf") / PI, 3))), gap=3)
-lrow((XL, E("d_erfD", "mm")), (XC - 60, T("Ø vorhanden: 17 mm", 160)), gap=GAP + 3)
+lrow((XL, E("d_erfD", "mm")), gap=GAP + 2)
+nw(V("d_erfD"), V("d_A"))
 
 # ------------------------------------------------------------------ Lagerberechnung
-page("Lagerberechnung", "Rillenkugellager 6003", "lager")
-for c in (D("C_r", q(6.37, "kN")), D("C_0r", q(3.25, "kN")), D("f_0", Num(14)),
-          D("f_a1", Num(3.45)), D("f_a2", Num(5.17)), D("e_1", Num(0.38)), D("e_2", Num(0.42)),
-          D("Y_1", Num(1.15)), D("Y_2", Num(1.04)), D("q_1", Num(0.2)), D("q_2", Num(0.2)), D("q_3", Num(0.6)),
-          D("v_1", q(50, "km/hr")), D("v_max", q(80, "km/hr")), D("n_G", q(24000, "1/min")),
-          D("S_0erf", Num(1)), D("f_RS", Num(1.3))):
+page("Lagerberechnung", "Vordimensionierung Rillenkugellager", "lager")
+rin(T("Lager: 6003 (17×35×10)", CW - XR, bold=True))
+for c in (D("d_L", V("d_A")), D("v_max", q(40, "km/hr")), D("L_h", q(10, "hr")), D("S_0min", Num(1.5)),
+          D("C_r", q(6.37, "kN")), D("C_0r", q(3.25, "kN")), D("f_0", Num(14)), D("n_G", q(24000, "1/min")),
+          D("X_L", Num(0.56)), D("p_L", Num(3))):
     rin(c)
 sub("1) Lagerkräfte (Kurve, äußeres Rad)")
 de("F_rA", Abs(V("F_A2")), "N")
 de("F_rB", Abs(V("F_B2")), "N")
 de("F_a", V("F_axB"), "N")
-sub("2) Äquivalente dynamische Lagerbelastung")
-de("P_A", V("F_rA"), "N")
+sub("2) Drehzahl und erforderliche Lebensdauer")
+de("n_R", V("v_max") / (2 * PI * V("r_R")), "1/min")
+de("L_10erf", V("n_R") * V("L_h") / Op("pow", 10, 6), note="Mio. Umdrehungen")
+doc.y = max(doc.y, YR["y"] + 6)
+sub("3) Äquivalente dynamische Lagerbelastung")
+txt("SKF-Tabelle, normale Lagerluft:")
+doc.skip(4)
+lrow((XL, D("f_tab", VecT([0.172, 0.345, 0.689, 1.03, 1.38, 2.07, 3.45, 5.17, 6.89]))), gap=4)
+lrow((XL, D("e_tab", VecT([0.19, 0.22, 0.26, 0.28, 0.30, 0.34, 0.38, 0.42, 0.44]))), gap=4)
+lrow((XL, D("Y_tab", VecT([2.30, 1.99, 1.71, 1.55, 1.45, 1.31, 1.15, 1.04, 1.00]))), gap=GAP + 4)
 de("f_aB", V("f_0") * V("F_a") / V("C_0r"))
-lin = (V("f_aB") - V("f_a1")) / (V("f_a2") - V("f_a1"))
-de("e_B", V("e_1") + (V("e_2") - V("e_1")) * lin)
-de("Y_B", V("Y_1") + (V("Y_2") - V("Y_1")) * lin)
-ev(V("F_a") / V("F_rB"), check=Cmp(V("F_a") / V("F_rB"), ">", V("e_B")))
-de("P_B", 0.56 * V("F_rB") + V("Y_B") * V("F_a"), "N")
-sub("3) Lebensdauer")
-de("L_10A", (V("C_r") / V("P_A")) ** 3, note="Mio. Umdrehungen")
-de("L_10B", (V("C_r") / V("P_B")) ** 3, note="Mio. Umdrehungen")
-de("P_mA", Root(V("q_1") * V("P_A") ** 3 + V("q_2") * Abs(V("F_A3")) ** 3 + V("q_3") * Abs(V("F_A1")) ** 3, 3), "N")
-de("P_mB", Root(V("q_1") * V("P_B") ** 3 + V("q_2") * Abs(V("F_B3")) ** 3 + V("q_3") * Abs(V("F_B1")) ** 3, 3), "N")
-de("L_10mA", (V("C_r") / V("P_mA")) ** 3, note="Mio. Umdrehungen")
-de("L_10mB", (V("C_r") / V("P_mB")) ** 3, note="Mio. Umdrehungen")
-de("n_1", V("v_1") / (2 * PI * V("r_R")), "1/min")
-mio = Op("pow", 10, 6)
-de("L_hA", V("L_10mA") * mio / V("n_1"), "hr")
-de("L_hB", V("L_10mB") * mio / V("n_1"), "hr")
-de("s_A", V("L_10mA") * mio * 2 * PI * V("r_R"), "km")
-de("s_B", V("L_10mB") * mio * 2 * PI * V("r_R"), "km")
-sub("4) Statische Tragsicherheit")
-ev(0.6 * V("F_rB") + 0.5 * V("F_a"), "N", check=Cmp(0.6 * V("F_rB") + 0.5 * V("F_a"), "<", V("F_rB")))
-de("S_0A", V("C_0r") / V("F_rA"), None, check=Cmp(V("S_0A"), ">", V("S_0erf")))
-de("S_0B", V("C_0r") / V("F_rB"), None, check=Cmp(V("S_0B"), ">", V("S_0erf")))
-de("S_0BR", V("S_0B") / V("f_RS"), None, check=Cmp(V("S_0BR"), ">", V("S_0erf")))
-sub("5) Drehzahl")
-de("n_max", V("v_max") / (2 * PI * V("r_R")), "1/min", check=Cmp(V("n_max"), "<", V("n_G")))
+de("e_B", BCall("linterp", V("f_tab"), V("e_tab"), V("f_aB")))
+de("Y_B", BCall("linterp", V("f_tab"), V("Y_tab"), V("f_aB")))
+de("P_B", If(Cmp(V("e_B"), "<", V("F_a") / V("F_rB")), V("X_L") * V("F_rB") + V("Y_B") * V("F_a"), V("F_rB")), "N")
+de("P_A", V("F_rA"), "N")
+sub("4) Erforderliche dynamische Tragzahl")
+de("C_erfB", V("P_B") * V("L_10erf") ** Op("div", 1, V("p_L")), "N")
+de("C_erfA", V("P_A") * V("L_10erf") ** Op("div", 1, V("p_L")), "N")
+lrow((XL, E("C_r", "N")), gap=GAP + 2)
+nw(V("C_erfB"), V("C_r"))
+nw(V("C_erfA"), V("C_r"))
+sub("5) Statische Tragsicherheit")
+de("P_0B", BCall("max", 0.6 * V("F_rB") + 0.5 * V("F_a"), V("F_rB")), "N")
+de("S_0B", V("C_0r") / V("P_0B"))
+nw(V("S_0min"), V("S_0B"))
+de("S_0A", V("C_0r") / V("F_rA"))
+nw(V("S_0min"), V("S_0A"))
+sub("6) Kontrolle Lebensdauer und Drehzahl")
+de("L_hB", (V("C_r") / V("P_B")) ** V("p_L") * Op("pow", 10, 6) / V("n_R"), "hr")
+nw(V("L_h"), V("L_hB"))
+nw(V("n_R"), V("n_G"))
 
 # ------------------------------------------------------------------ Inhaltsverzeichnis
 last = doc.page + 1

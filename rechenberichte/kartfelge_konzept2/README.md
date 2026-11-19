@@ -100,3 +100,15 @@ auch in allen neueren Versionen. Prime vergleicht beim Öffnen nur die Formatver
 of Mathcad“). Prime 11.0.1 schreibt 11.0.0.1, Prime 12 schreibt 12.0.0.0; die Datei trägt jetzt 11.0.0.0.
 Einstellungen und Versionsstempel stammen aus einem Prime-11-Arbeitsblatt; die drei Seitenattribute, die
 erst Prime 12 kennt, sind entfernt. Erzeugen: `build_bericht2.py <ziel.mcdx> <Prime-11-Arbeitsblatt> generator/img`.
+
+### Lagerberechnung als Vordimensionierung (19.11.2026)
+
+Die Lagerberechnung ist jetzt eine Vordimensionierung auf den Wellendurchmesser von oben (`d_L := d_A`):
+Kurve außen als Dauerlast (Lager B), Lebensdauer `L_h = 10 h`, Geschwindigkeit `v_max = 40 km/h`,
+`C_erf = P·L^(1/p)` mit `L = n·L_h/10^6`, kleinstes passendes Rillenkugellager mit Bohrung 17 mm aus den
+Reihen 60/62/63 → 6003 (C_erf = 1794 N ≤ C = 6370 N; S0 = 1,70 ≥ 1,5; Kontrolle L_h = 447 h ≥ 10 h).
+
+Alle Werte sind änderbare Eingaben. e und Y kommen per `linterp` aus der vollständigen SKF-Tabelle,
+P schaltet per `if` zwischen Fr und X·Fr + Y·Fa um, und jeder Nachweis zeigt live „erfüllt“ oder
+„nicht erfüllt“ (Funktion `Nachweis(ist, zul)`, auch auf der Wellenseite). Reicht das 6003 nach einer
+Änderung nicht mehr, die Katalogwerte C, C0, f0 und die Bezeichnung durch die eines größeren Lagers ersetzen.
