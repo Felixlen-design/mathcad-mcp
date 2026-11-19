@@ -91,3 +91,12 @@ Erzeugt mit `generator/build_bericht2.py`; alle Ergebnisse in `Pruefprotokoll_Kr
 
 Vorzeichen der Lagerkräfte wie im Freikörperbild: F_A nach oben, F_B nach unten positiv
 (Kurve außen: F_A = 1181 N, F_B = 1915 N; negative Werte wirken entgegengesetzt).
+
+### Prime 11.0.0.0 (19.11.2026)
+
+`Rechenbericht_Kartfelge_Lenhard.mcdx` ist jetzt für Mathcad Prime 11.0.0.0 gestempelt und öffnet damit
+auch in allen neueren Versionen. Prime vergleicht beim Öffnen nur die Formatversion in `docProps/app.xml`
+(`serializationVersion`) mit seiner eigenen und lehnt neuere ab („…because it is from a more recent version
+of Mathcad“). Prime 11.0.1 schreibt 11.0.0.1, Prime 12 schreibt 12.0.0.0; die Datei trägt jetzt 11.0.0.0.
+Einstellungen und Versionsstempel stammen aus einem Prime-11-Arbeitsblatt; die drei Seitenattribute, die
+erst Prime 12 kennt, sind entfernt. Erzeugen: `build_bericht2.py <ziel.mcdx> <Prime-11-Arbeitsblatt> generator/img`.

@@ -292,10 +292,18 @@ if errors or dups or over or too_low:
 ref = zipfile.ZipFile(REF)
 presentation = ref.read("mathcad/settings/presentation.xml").decode("utf-8-sig")
 margin = f"{MARGIN_L:.10g},{MARGIN_T:.10g},{MARGIN_R:.10g},{MARGIN_B:.10g}"
+app_xml = ref.read("docProps/app.xml").decode("utf-8-sig")
+PRIME11 = "<appVersion>11." in app_xml
+if PRIME11:
+    # Prime refuses files whose format version is newer than its own; 11.0.0.0 opens format 11.0.0.0 and older
+    app_xml = re.sub(r"(<serializationVersion[^>]*>)[^<]*", r"\g<1>11.0.0.0", app_xml)
+    app_xml = re.sub(r"<appVersion>[^<]*", "<appVersion>11.0.0.0", app_xml)
+    extra = ""          # Prime 11 does not know the Prime 12 page attributes
+else:
+    extra = ' starting-page-number="1" total-pages-offset="0" page-background-color="#FFF6FAF6"'
 presentation = re.sub(r"<pageModel [^>]*/>",
                       f'<pageModel paper-code="A4" grid-size="Fine" orientation="Portrait" margin-type="Custom" '
-                      f'page-margin="{margin}" spell-check-enabled="false" starting-page-number="1" '
-                      f'total-pages-offset="0" page-background-color="#FFF6FAF6" />', presentation)
+                      f'page-margin="{margin}" spell-check-enabled="false"{extra} />', presentation)
 content_types = (
     f'{BOM}{XML_DECL}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
     '<Default Extension="xml" ContentType="application/vnd.openxmlformats-officedocument.mathprocessingml.mathcad.main+xml" />'
@@ -323,7 +331,7 @@ core = (f'{XML_DECL}\n<cp:coreProperties xmlns:cp="http://schemas.openxmlformats
 base = {
     "[Content_Types].xml": content_types.encode(),
     "_rels/.rels": root_rels.encode(),
-    "docProps/app.xml": ref.read("docProps/app.xml"),
+    "docProps/app.xml": (BOM + app_xml).encode(),
     "docProps/core.xml": core.encode(),
     "mathcad/settings/presentation.xml": (BOM + presentation).encode(),
     "mathcad/settings/calculation.xml": ref.read("mathcad/settings/calculation.xml"),
