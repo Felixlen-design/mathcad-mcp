@@ -80,3 +80,14 @@ python generator/unseen.py <ziel.mcdx> <Ordner mit Prime-Arbeitsblättern>
 
 Das Prime-12-Arbeitsblatt liefert nur Versionsstempel und Standard-Einstellungen. Benötigt: Python 3.10+,
 matplotlib (Skizzen), sympy/numpy (nur `plate_check.py`), lxml (Prüfskripte).
+
+## Kurzfassung: Kräfte, Wellendurchmesser, Lager (19.11.2026)
+
+`Rechenbericht_Kartfelge_Lenhard.mcdx` ist die gekürzte Fassung im Stil des Rechenberichts Pneumatik-Spanner:
+Deckblatt, Inhaltsverzeichnis, dann Kräfteberechnung (Seite 3–5), Wellenberechnung Achsschenkel Ø17
+(Seite 6–8) und Lagerberechnung 6003 (Seite 9–11). Eingabewerte stehen rechts, jede Formel mit `:=` und
+darunter das Ergebnis mit `=`, Nachweise als Vergleich (z. B. `σb < σbzul`), ohne Erläuterungstexte.
+Erzeugt mit `generator/build_bericht2.py`; alle Ergebnisse in `Pruefprotokoll_Kraefte_Welle_Lager.txt`.
+
+Vorzeichen der Lagerkräfte wie im Freikörperbild: F_A nach oben, F_B nach unten positiv
+(Kurve außen: F_A = 1181 N, F_B = 1915 N; negative Werte wirken entgegengesetzt).
